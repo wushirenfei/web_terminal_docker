@@ -1,14 +1,21 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import time
 import docker
 import threading
+from socket import timeout
 
 
 class ClientHandler(object):
 
     def __init__(self, **kwargs):
         self.dockerClient = docker.APIClient(**kwargs)
+
+
+    @property
+    def client(self):
+        return self.dockerClient
 
     def creatTerminalExec(self, containerId):
         execCommand = [
@@ -17,8 +24,10 @@ class ClientHandler(object):
             'TERM=xterm-256color; export TERM; [ -x /bin/bash ] && ([ -x /usr/bin/script ] && /usr/bin/script -q -c "/bin/bash" /dev/null || exec /bin/bash) || exec /bin/sh']
         execOptions = {
             "tty": True,
-            "stdin": True
+            "stdin": True,
+            "stdout": True
         }
+
         execId = self.dockerClient.exec_create(containerId, execCommand, **execOptions)
         return execId["Id"]
 
@@ -41,7 +50,21 @@ class DockerStreamThread(threading.Thread):
                 else:
                     print("docker daemon socket is close")
                     self.ws.close()
+            except timeout:
+                print('Receive from docker timeout.')
             except Exception as e:
                 print("docker daemon socket err: %s" % e)
                 self.ws.close()
                 break
+
+
+class BeatWS(threading.Thread):
+    def __init__(self, ws, docker_client):
+        super(BeatWS, self).__init__()
+        self.ws = ws
+        self.docker_client = docker_client
+
+    def run(self):
+        while not self.ws.closed:
+            time.sleep(2)
+            print(self.docker_client.ping())

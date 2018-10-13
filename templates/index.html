@@ -11,11 +11,32 @@
 <script src="{{ url_for('static', filename='xterm/dist/xterm.js') }}"></script>
 <script src="{{ url_for('static', filename='xterm/dist/addons/attach/attach.js') }}"></script>
 <script>
+    let wsPing = null;
+    function ping(ws) {
+        console.log('in ping func', ws.state);
+        if (ws.readyState == ws.CLOSED) {
+            clearInterval(wsPing)
+        } else {
+            ws.send('__ping__');
+            tm = setTimeout(function () {
+               /// ---connection closed ///
+            }, 5000);
+        }
+    }
+
+    function pong() {
+        clearTimeout(tm);
+    }
+
     let term = new Terminal({cursorBlink: true});
     term.open(document.getElementById('#terminal'));
     term.writeln("welcome to use docker web terminal!");
     let socket = new WebSocket('ws://127.0.0.1:5000/echo');
     term.attach(socket);
+
+    socket.onopen = function() {
+        wsPing = setInterval(()=>{ping(socket)}, 5000);
+    };
     socket.onclose = function () {
         term.writeln("closed. Thank you for use!");
     };
