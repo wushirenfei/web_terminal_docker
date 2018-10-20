@@ -67,4 +67,4 @@ class BeatWS(threading.Thread):
     def run(self):
         while not self.ws.closed:
             time.sleep(2)
-            print(self.docker_client.ping())
+            self.docker_client.ping()

@@ -1,5 +1,6 @@
 import conf
 
+from werkzeug import serving
 from flask_sockets import Sockets
 from flask import Flask, render_template
 from utility.myDocker import ClientHandler, DockerStreamThread, BeatWS
@@ -25,20 +26,32 @@ def echo_socket(ws):
     beat_thread = BeatWS(ws, dockerCli.client)
     beat_thread.start()
 
-    while not ws.closed:
-        message = ws.receive()
-        if message is not None:
-            sed_msg = bytes(message, encoding='utf-8')
-            if sed_msg != b'__ping__':
-                terminalStream.send(bytes(message, encoding='utf-8'))
+    try:
+        while not ws.closed:
+            message = ws.receive()
+            if message is not None:
+                sed_msg = bytes(message, encoding='utf-8')
+                if sed_msg != b'__ping__':
+                    terminalStream.send(bytes(message, encoding='utf-8'))
+    except Exception as err:
+        print(err)
+    finally:
+        ws.close()
+        terminalStream.close()
+        dockerCli.dockerClient.close()
 
-    terminalStream.send(bytes('exit\n', encoding='utf-8'))
-    dockerCli.dockerClient.close()
-    terminalThread.start()
+
+@serving.run_with_reloader
+def run_server():
+    app.debug = True
+    from gevent import pywsgi
+    from geventwebsocket.handler import WebSocketHandler
+    server = pywsgi.WSGIServer(
+        listener = ('0.0.0.0', 5000),
+        application=app,
+        handler_class=WebSocketHandler)
+    server.serve_forever()
 
 
 if __name__ == '__main__':
-    from gevent import pywsgi
-    from geventwebsocket.handler import WebSocketHandler
-    server = pywsgi.WSGIServer(('', 5000), app, handler_class=WebSocketHandler)
-    server.serve_forever()
+    run_server()
