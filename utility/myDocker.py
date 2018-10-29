@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
 import time
 import docker
 import threading
@@ -11,7 +8,6 @@ class ClientHandler(object):
 
     def __init__(self, **kwargs):
         self.dockerClient = docker.APIClient(**kwargs)
-
 
     @property
     def client(self):

@@ -1,5 +1,5 @@
 Flask==0.12.2
 Flask-Sockets
-docker
+docker==2.5
 werkzeug
 gevent

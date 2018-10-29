@@ -17,7 +17,8 @@ def index():
 
 @sockets.route('/echo')
 def echo_socket(ws):
-    dockerCli = ClientHandler(base_url=conf.DOCKER_HOST, timeout=10, version='1.38')
+    # , version = '1.38'
+    dockerCli = ClientHandler(base_url=conf.DOCKER_HOST, timeout=10)
     terminalExecId = dockerCli.creatTerminalExec(conf.CONTAINER_ID)
     terminalStream = dockerCli.startTerminalExec(terminalExecId)._sock
 
@@ -47,7 +48,7 @@ def run_server():
     from gevent import pywsgi
     from geventwebsocket.handler import WebSocketHandler
     server = pywsgi.WSGIServer(
-        listener = ('0.0.0.0', 5000),
+        listener=('0.0.0.0', 5000),
         application=app,
         handler_class=WebSocketHandler)
     server.serve_forever()
